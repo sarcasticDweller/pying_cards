@@ -51,5 +51,11 @@ class Card:
         return True if self.rank == Rank.ACE and other.rank == Rank.KING else self.rank > other.rank
 
 class HighAceCard(Card):
+    """An imaginary card that should not be used in an actual deck!"""
     def __init__(self, suit: Suit):
         super().__init__(suit, _SpecialRank.ACEHIGH)
+
+class Joker(Card):
+    """Often used as a wildcard. Should be used as a wild card here, to be frank."""
+    def __init__(self):
+        raise Exception("Jokers are unimplemented")

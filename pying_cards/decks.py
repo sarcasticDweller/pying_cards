@@ -1,10 +1,10 @@
 from random import shuffle
 from enum import IntEnum, auto
 from typing import List, Dict, Tuple
-from card import Card, HighAceCard, Suit, Rank, RankType
+from pying_cards.cards import Card, HighAceCard, Joker, Suit, Rank, RankType
 
     
-class Deck(List[Card]):
+class Collection(List[Card]):
 
     class AcePreference(IntEnum):
         LOW = auto()
@@ -27,8 +27,20 @@ class Deck(List[Card]):
         cls._ace_preference = preference if preference else cls._ace_preference
     
     @classmethod
-    def standard_deck(cls) -> "Deck":
-        return cls(*[Card(s, r) for s in Suit for r in Rank])
+    def standard_deck(cls, decks: int = 1, jokers: int = 0) -> "Collection":
+        """
+        Generates a standard 52-card deck with optional arguments for indicating how many decks to combine.
+        
+        :param decks: How many decks to be combined. Useful for games like Blackjack or flavors of Rummy.
+        :type decks: int (optional)
+        :param jokers: How many jokers to be added to the Collection
+        :type jokers: int (optional)
+        :return: Returns a Collection with at least 52 cards, in order.
+        :rtype: Collection
+        """
+        cards = [Card(s, r) for _ in range(decks) for s in Suit for r in Rank]
+        cards.extend([Joker() for _ in range(jokers)])
+        return cls(*cards)
 
     @classmethod
     def get_card_data_as_lists(cls, cards: List[Card]) -> Tuple[List[Suit], List[RankType]]:
@@ -65,29 +77,24 @@ class Deck(List[Card]):
         shuffle(self)
 
     def draw(self, count: int = 1) -> List[Card]:
-        """Will draw `count` cards from the top of the deck and return them as a list of `Card` objects. Will error if there are not enough cards in the deck."""
+        """Will draw `count` cards from the top of the Collection and return them as a list of `Card` objects. Will error if there are not enough cards in the Collection."""
         return [self.pop() for _ in range(count)]
-
-    """This function only exists to work around a lack-of-a-feature in easyttuimenus. Patching the bug!
-    def get_list_of_cards_as_strings(self) -> List[str]: # this *heavily* resembles __repr__... should these be merged?
-        return [f"{card}" for card in self]
-    """
 
     def draw_several_specific(self, card_indexes: List[int]) -> List[Card]:
         drawn_cards: List[Card] = []
         for i in card_indexes:
             drawn_cards.append(self[i - 1])
-        self.cards = list(set(self).symmetric_difference(drawn_cards)) # removes drawn cards from deck
+        self.cards = list(set(self).symmetric_difference(drawn_cards)) # removes drawn cards from Collection
         return drawn_cards
     
-    def empty_deck(self) -> List[Card]:
-        """Returns the contents of the deck. Designed to easily pipe contents from A to B."""
+    def empty_Collection(self) -> List[Card]:
+        """Returns the contents of the Collection. Designed to easily pipe contents from A to B."""
         old_cards = list(self)
         self.clear()
         return old_cards
     
     def contains_pairs(self, size_of_pair: int = 2) -> Tuple[bool, List[List[Card]]]:
-        """Checks the deck for pairs of a given length. Supports two-of-a-kind, three-of-a-kind, etc.
+        """Checks the Collection for pairs of a given length. Supports two-of-a-kind, three-of-a-kind, etc.
 
         :param size_of_pair: The length of the pairs to check for. Defaults to 2 to search for standard pairs. I'd like to make this cacheable, but that's a smarter person's job.
         :type size_of_pair: int, (optional)
@@ -121,9 +128,9 @@ class Deck(List[Card]):
         return len(pairs) > 0, pairs
 
     def contains_straights(self, size_of_straight: int = 3) -> tuple[bool, List[List[Card]]]:
-        """Checks the deck for straights of a given length. Supports three-card straights, four-card straights, etc. Supports high/low aces (read more below) and duplicates.
+        """Checks the Collection for straights of a given length. Supports three-card straights, four-card straights, etc. Supports high/low aces (read more below) and duplicates.
 
-        **IMPORTANT**: If you want to customize how aces work, make sure you `Deck.set_aces_preference` and `Deck.set_aces_mode` before running `Deck.contains_straights`
+        **IMPORTANT**: If you want to customize how aces work, make sure you `Collection.set_aces_preference` and `Collection.set_aces_mode` before running `Collection.contains_straights`
 
         **IMPORTANT**: In its current state, this supports duplicate cards for every type of card... except aces.
 
@@ -183,9 +190,9 @@ class Deck(List[Card]):
             #low_ace_used, high_ace_used = found_straights[0][0].rank == int(Rank.ACE), found_straights[-1][-1].rank == HIGH_ACE
             low_ace_used, high_ace_used = isinstance(found_straights[0][0], HighAceCard), isinstance(found_straights[-1][-1], HighAceCard)
             if low_ace_used and high_ace_used:
-                if Deck._ace_preference == Deck.AcePreference.LOW:
+                if Collection._ace_preference == Collection.AcePreference.LOW:
                     found_straights.pop(-1)
-                if Deck._ace_preference == Deck.AcePreference.HIGH:
+                if Collection._ace_preference == Collection.AcePreference.HIGH:
                     found_straights.pop(0)
             elif high_ace_used and not low_ace_used: # convert imaginary high-ace into a real ace
                 found_straights[-1][-1] = first_card # which must be an ace, because an ace is present
