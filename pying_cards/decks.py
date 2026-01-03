@@ -1,7 +1,7 @@
 from random import shuffle
 from enum import IntEnum, auto
 from typing import List, Dict, Tuple
-from pying_cards.cards import Card, HighAceCard, Joker, Suit, Rank, RankType
+from .cards import Card, HighAceCard, Joker, Suit, Rank, RankType
 
     
 class Collection(List[Card]):
