@@ -1,4 +1,4 @@
-from enum import Enum, IntEnum
+from enum import Enum, IntEnum, auto
 class Suit(Enum):
     SPADE = "spade"
     HEART = "heart"
@@ -35,10 +35,21 @@ class Card:
     :var rank: simple enumerated rank data. Under the hood, it's an `int`.
     :vartype rank: Rank
     """
+    class AceMode(IntEnum):
+        LOW = auto()
+        HIGH = auto()
+    
+    _ace_mode: AceMode = AceMode.LOW
+
     def __init__(self, suit: Suit, rank: RankType) -> None:
         self.suit = suit
-        self.rank = rank
+        self.rank = _SpecialRank.ACEHIGH if rank == Rank.ACE and Card._ace_mode == Card.AceMode.HIGH else rank
     
+    @classmethod
+    def ace_settings(cls, mode: AceMode):
+        cls._ace_mode = mode
+    
+
     def __repr__(self) -> str:
         return f"Card {self.rank.name} of {self.suit.name}"
     
