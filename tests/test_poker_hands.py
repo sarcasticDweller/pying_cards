@@ -2,6 +2,7 @@ from unittest import TestCase
 from pying_cards.cards import Card, Suit, Rank
 from pying_cards.poker_hands import *
 
+cards, hand = 0, 1
 class TestAnalyzeHand(TestCase):
     def setUp(self):
         self.validRF = (
@@ -24,6 +25,7 @@ class TestAnalyzeHand(TestCase):
             ),
             StraightFlush
         )
+        # i would use variables to make it clearer what the index numbers mean later on, but it gives me weird squigglies when i try. this is test code, why bother?
     def test_validRF_thusTrue(self):
         self.assertIsInstance(
             analyze_hand(*self.validRF[0]),

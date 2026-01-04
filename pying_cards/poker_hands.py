@@ -1,11 +1,18 @@
-# I beg of you PLEASE test me! At some time that isn't 1 in the morning! 2 in the morning doesn't count!
-
 from pying_cards.decks import Collection
 from pying_cards.cards import Suit, Rank, RankType, Card
 from enum import IntEnum
 from typing import Callable, Any, List, Tuple, Dict
 from functools import lru_cache # tell me: is this even worth it for the kind of work we're doing here?
 
+"""
+Hello future me,
+
+I got a third of the way through an idea and then realized it was almost bedtime and I spent all afternoon doing math... so I put a pin in it. 
+
+You should see a bunch of red squigglies. Start by reading the definition of PokerHand, and then proceed from there.
+
+Goodnight!
+"""
 
 POKER_HAND_SIZE = 5 # no matter the game, you build a hand of five cards. even if three of those were randomly pulled from the river.
 def _validate_hand_size(func: Callable[[Any], Any]): # pyright: ignore[reportUnusedFunction] #validation decorator to enforce POKER_HAND_SIZE
@@ -29,54 +36,70 @@ class HandValue(IntEnum):
     HIGH_CARD = 10
     NO_POINTS = 0
 
-class PokerHand(Collection):
-    def __init__(self, validate: Callable[..., bool], points: HandValue, *cards: Card):
+class PokerHand(Collection): # remember that a Collection is just a fancier list
+    def __init__(self, *cards: Card):
         super().__init__(*cards)
-        self.points = points
-        if validate(*cards):
-            super().__init__(*cards)
-            self.points = points
-            self.points_cards: List[Card] # the cards that actually make up the meat of the card
-            self.other_cards: List[Card] # everything else in the hand, useful for high-card scoring
-        else:
-            super().__init__() # do not pass cards along
-            self.points = HandValue.NO_POINTS
-        return self
-    #self.poitns will require further calculation as high cards act as tie-breakers
+        self.points_cards: List[Card] = self._validate(*cards) # the cards that actually make up the meat of the card
+        assert(self.points_cards)
+        self.other_cards: List[Card] # everything else in the hand, useful for high-card scoring
+        self.points: HandValue
+        #self.points will require further calculation as high cards act as tie-breakers
+
+    def __repr__(self):
+        return f"{self.__class__.__name__} containing {list(self)}"
+    
+    @classmethod
+    def _validate(cls, *cards: Card) -> List[Card]:
+        '''Returns the list of cards that make the hand "valid"''' # hey, i know im breaking my docstring formatting. but i wanted double-quotes darnit! 
+        ... #id rather use pass, but this makes pyright happy
+
+    @property
+    def _high_card(self) -> Card:
+        return sorted(self)[-1]
 
 ROYAL_FLUSH_RANKS = [Rank.ACE, Rank.TEN, Rank.JACK, Rank.QUEEN, Rank.KING] # im used elsewhere, dont change my scope!
 THE_ROYAL_STRAIGHT: Callable[..., bool] = lambda *ranks: Rank.ACE in ranks and Rank.TEN in ranks and Rank.JACK in ranks and Rank.QUEEN in ranks and Rank.KING in ranks  
 class RoyalFlush(PokerHand):
     def __init__(self, *cards: Card):
-        super().__init__(self._validate, HandValue.ROYAL_FLUSH, *cards)
+        super().__init__(*cards)
 
     @classmethod
-    def _validate(cls, *cards: Card) -> bool:
+    def _validate(cls, *cards: Card) -> List[Card]:
+        hand_cards: List[Card] = []
         suits, ranks = _card_data(Collection(*cards))
         ranks.sort()
-        return THE_ROYAL_STRAIGHT(ranks) and _is_flush(*suits)
+        if THE_ROYAL_STRAIGHT(ranks) and _is_flush(*suits):
+            hand_cards = list(cards)
+        return hand_cards 
 
 class StraightFlush(PokerHand):
     def __init__(self, *cards: Card):
-        super().__init__(self._validate, HandValue.STRAIGHT_FLUSH, *cards)
+        super().__init__(*cards)
 
     @classmethod
-    def _validate(cls, *cards: Card) -> bool:
+    def _validate(cls, *cards: Card) -> List[Card]:
+        hand_cards: List[Card] = []
         suits, ranks = _card_data(Collection(*cards))
         ranks.sort()
-        return _is_sequential(*ranks) and _is_flush(*suits)
+        if _is_sequential(*ranks) and _is_flush(*suits):
+            hand_cards = list(*cards)
+        return hand_cards
+
 
 class FourOfAKind(PokerHand):
     def __init__(self, *cards: Card):
-        super().__init__(self._validate, HandValue.FOUR_OF_A_KIND, *cards)
+        super().__init__(*cards)
 
     @classmethod
-    def _validate(cls, *cards: Card) -> bool:
-        return _is_group_of_pairs(Collection(*cards), 4)
+    def _validate(cls, *cards: Card) -> List[Card]:
+        hand_cards: List[Card] = []
+        if _is_group_of_pairs(Collection(*cards), 4, 1):
+            ...
+        return hand_cards
     
 class FullHouse(PokerHand):
     def __init__(self, *cards: Card):
-        super().__init__(self._validate, HandValue.FULL_HOUSE, *cards)
+        super().__init__(*cards)
     
     @classmethod
     def _validate(cls, *cards: Card) -> bool: # 3 pair and 2 pair
@@ -84,7 +107,7 @@ class FullHouse(PokerHand):
 
 class Flush(PokerHand):
     def __init__(self, *cards: Card):
-        super().__init__(self._validate, HandValue.FLUSH, *cards)
+        super().__init__(*cards)
     
     @classmethod
     def _validate(cls, *cards: Card) -> bool:
@@ -93,7 +116,7 @@ class Flush(PokerHand):
 
 class Straight(PokerHand):
     def __init__(self, *cards: Card):
-        super().__init__(self._validate, HandValue.STRAIGHT, *cards)
+        super().__init__(*cards)
     
     @classmethod
     def _validate(cls, *cards: Card) -> bool:
@@ -102,7 +125,7 @@ class Straight(PokerHand):
 
 class ThreeOfAKind(PokerHand):
     def __init__(self, *cards: Card):
-        super().__init__(self._validate, HandValue.THREE_OF_A_KIND, *cards)
+        super().__init__(*cards)
 
     @classmethod
     def _validate(cls, *cards: Card) -> bool:
@@ -110,7 +133,7 @@ class ThreeOfAKind(PokerHand):
 
 class TwoPair(PokerHand):
     def __init__(self, *cards: Card):
-        super().__init__(self._validate, HandValue.TWO_PAIR, *cards)
+        super().__init__(*cards)
 
     @classmethod
     def _validate(cls, *cards: Card) -> bool:
@@ -118,18 +141,17 @@ class TwoPair(PokerHand):
 
 class Pair(PokerHand):
     def __init__(self, *cards: Card):
-        super().__init__(self._validate, HandValue.PAIR, *cards)
+        super().__init__(*cards)
+    
     @classmethod
     def _validate(cls, *cards: Card) -> bool:
         return _is_group_of_pairs(Collection(*cards), 2)
 
 class HighCard(PokerHand):
     ... # not sure if i even want to implement this class
-
-
+    # yes, i do want to implement it! just not right now
 
 _card_data: Callable[[List[Card]], Tuple[List[Suit], List[RankType]]] = lambda cards: Collection.get_card_data_as_lists(cards)
-
 
 # PokerHand validation functions
 def get_high_card(cards: Collection) -> Card: # pyright: ignore[reportReturnType]
@@ -138,50 +160,6 @@ def get_high_card(cards: Collection) -> Card: # pyright: ignore[reportReturnType
     for card in cards:
         if card.rank == ranks[-1]:
             return card
-
-# okay, this is great and all, but what would be REALLY cool is a function that takes a collection of cards and returns the highest-ranked poker hand in that collection
-
-@lru_cache
-def analyze_hand(*cards: Card) -> PokerHand | None:
-    """Returns the poker hand and what cards make it up. Assumes cards are pre-sorted"""
-    hand_size = len(cards)
-    assert(hand_size == POKER_HAND_SIZE) # just for simplicity while we dev
-
-    hand: PokerHand | None = None
-
-    pairs = _sort_by_attribute("rank", *cards)
-    suits, ranks = _card_data(list(cards))
-    ranks.sort()
-    flush = _is_flush(*suits) # this is used all over the place. its a really simple func but it keeps the code clean
-    straight = _is_sequential(*ranks)
-
-    if flush and THE_ROYAL_STRAIGHT(*ranks):
-        hand = RoyalFlush(*cards)
-    elif flush and straight:
-        hand = StraightFlush(*cards)
-    elif flush:
-        hand = Flush(*cards) 
-    elif straight:
-        hand = Straight(*cards)
-    else:
-        # analyze your pairs
-        pair_sizes = sorted([len(pairs[p]) for p in pairs])
-        expected_pairs: Dict[Any, List[int]] = {
-            FourOfAKind: [4, 1],
-            FullHouse: [3, 2],
-            ThreeOfAKind: [3, 1, 1],
-            TwoPair: [2, 2, 1],
-            Pair: [2, 1, 1, 1]
-
-        }
-        for e in expected_pairs:
-            if _only_numbers_in_sequence(pair_sizes, *expected_pairs[e]): # unfortunately, this is a triple-nested loop
-                hand = e(*cards)
-                break # there's no overlap between different kinds of pairs, so we can exit here
-    if not hand:
-        ... 
-
-    return hand
 
 @lru_cache
 def _sort_by_attribute(attribute_name: str, *cards: Card) -> Dict[Any, List[Card]]:
@@ -227,4 +205,62 @@ def _is_group_of_pairs(cards: Collection, *pairs_sizes: int) -> bool:
     return True
 
 def _is_flush(*suits: Suit):
-    return len(suits) == 1
+    return len(set(suits)) == 1
+
+# okay, this is great and all, but what would be REALLY cool is a function that takes a collection of cards and returns the highest-ranked poker hand in that collection
+
+@lru_cache
+def analyze_hand_uisng_brain(*cards: Card) -> PokerHand | None:
+    """Returns the poker hand and what cards make it up. Assumes cards are pre-sorted"""
+    hand_size = len(cards)
+    assert(hand_size == POKER_HAND_SIZE) # just for simplicity while we dev
+
+    print(f"analzying {list(cards)}")
+
+    hand: PokerHand | None = None
+
+    pairs = _sort_by_attribute("rank", *cards)
+    suits, ranks = _card_data(list(cards))
+    ranks.sort()
+    flush = _is_flush(*suits) # this is used all over the place. its a really simple func but it keeps the code clean
+    straight = _is_sequential(*ranks)
+    print(f"Is flush: {flush}")
+    print(f"Is straight: {straight}")
+
+    if flush and THE_ROYAL_STRAIGHT(*ranks):
+        print("hand looks like a royal flush")
+        hand = RoyalFlush(*cards)
+    elif flush and straight:
+        print("hand looks like a straight flush")
+        hand = StraightFlush(*cards)
+    elif flush:
+        print("hand looks like a flush")
+        hand = Flush(*cards) 
+    elif straight:
+        print("hand looks like a straight")
+        hand = Straight(*cards)
+    else:
+        # analyze your pairs
+        pair_sizes = sorted([len(pairs[p]) for p in pairs])
+        expected_pairs: Dict[Any, List[int]] = {
+            FourOfAKind: [4, 1],
+            FullHouse: [3, 2],
+            ThreeOfAKind: [3, 1, 1],
+            TwoPair: [2, 2, 1],
+            Pair: [2, 1, 1, 1]
+
+        }
+        for e in expected_pairs:
+            if _only_numbers_in_sequence(pair_sizes, *expected_pairs[e]): # unfortunately, this is a triple-nested loop
+                print(f"hand looks like a {e}")
+                hand = e(*cards)
+                break # there's no overlap between different kinds of pairs, so we can exit here
+    if not hand:
+        ... 
+    print(f"output: {hand}")
+
+    return hand
+
+def analyze_hand_using_brawn(*cards: Card) -> PokerHand:
+    ...
+    # go through all PokerHand sublcasses in order of hand value until you find one that validates

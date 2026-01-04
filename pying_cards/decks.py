@@ -4,7 +4,7 @@ from typing import List, Dict, Tuple
 from .cards import Card, HighAceCard, Joker, Suit, Rank, RankType
 
     
-class Collection(List[Card]):
+class Collection(List[Card]): # this class is doing double-duty as an organization tool and analysis tool. id rather it just be an organization tool
 
     class AcePreference(IntEnum):
         LOW = auto()
@@ -99,8 +99,8 @@ class Collection(List[Card]):
         :param size_of_pair: The length of the pairs to check for. Defaults to 2 to search for standard pairs. I'd like to make this cacheable, but that's a smarter person's job.
         :type size_of_pair: int, (optional)
         :return: A tuple containing:
-                - A `bool` indicating whether any pairs of the specified length (`size_of_pair`) were found.
-                - A `list` of lists, where each inner `list` contains `Card` objects representing a pair.
+            - A `bool` indicating whether any pairs of the specified length (`size_of_pair`) were found.
+            - A `list` of lists, where each inner `list` contains `Card` objects representing a pair.
         :rtype: Tuple[bool, List[List[Card]]]
         """
         ranks_dict: Dict[int, List[Card]] = {}
